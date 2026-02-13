@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  # Database for User and Order services
+  postgres:
+    image: postgres:16-alpine
+    container_name: intellicart-db
+    environment:
+      POSTGRES_USER: samuel_admin
+      POSTGRES_PASSWORD: S1036519037.a
+      POSTGRES_DB: intellicart_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Cache and Session management
+  redis:
+    image: redis:7-alpine
+    container_name: intellicart-cache
+    ports:
+      - "6379:6379"
+
+  # Event Streaming (Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
+  # Distributed Tracing
+  jaeger:
+    image: jaegertracing/all-in-one:1.50
+    container_name: intellicart-tracing
+    ports:
+      - "16686:16686" # UI
+      - "4317:4317"   # OTLP gRPC
+
+volumes:
+  postgres_data:
