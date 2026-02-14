@@ -1,0 +1,16 @@
+com/intellicart/userservice/controller/UserController.class
+com/intellicart/userservice/repository/UserRepository.class
+com/intellicart/userservice/security/JwtAuthenticationFilter.class
+com/intellicart/userservice/config/SecurityConfig.class
+com/intellicart/userservice/repository/RoleRepository.class
+com/intellicart/userservice/dto/LoginRequest.class
+com/intellicart/userservice/model/User.class
+com/intellicart/userservice/security/JwtUtil.class
+com/intellicart/userservice/dto/AuthResponse.class
+com/intellicart/userservice/controller/HealthController.class
+com/intellicart/userservice/model/Role.class
+com/intellicart/userservice/service/CustomUserDetailsService.class
+com/intellicart/userservice/controller/AuthController.class
+com/intellicart/userservice/UserServiceApplication.class
+com/intellicart/userservice/service/AuthService.class
+com/intellicart/userservice/dto/RegisterRequest.class

@@ -1,0 +1,6 @@
+com/intellicart/orderservice/repository/OrderRepository.class
+com/intellicart/orderservice/OrderServiceApplication.class
+com/intellicart/orderservice/model/OrderStatus.class
+com/intellicart/orderservice/web/HealthController.class
+com/intellicart/orderservice/model/OrderItem.class
+com/intellicart/orderservice/model/Order.class
