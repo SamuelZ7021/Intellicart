@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import api from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { jwtDecode } from "jwt-decode";
 import { Plus } from "lucide-react";
 
 interface Order {
@@ -27,7 +26,8 @@ export default function OrderListPage() {
             }
 
             try {
-                const decoded: any = jwtDecode(token);
+                // Fetch user profile using the token.
+                // const decoded: any = jwtDecode(token);
                 // Assuming the token has a 'sub' claim with email, or we need userId.
                 // If the token doesn't have ID, we might need to fetch user profile first.
                 // But let's assume for now we can get orders by user context or if token has ID.

@@ -35,18 +35,22 @@ export default function RegisterPage() {
                             <div className="flex flex-col space-y-1.5">
                                 <Label htmlFor="firstName">First Name</Label>
                                 <Input id="firstName" {...register('firstName', { required: true })} />
+                                {errors.firstName && <span className="text-red-500 text-sm">First name is required</span>}
                             </div>
                             <div className="flex flex-col space-y-1.5">
                                 <Label htmlFor="lastName">Last Name</Label>
                                 <Input id="lastName" {...register('lastName', { required: true })} />
+                                {errors.lastName && <span className="text-red-500 text-sm">Last name is required</span>}
                             </div>
                             <div className="flex flex-col space-y-1.5">
                                 <Label htmlFor="email">Email</Label>
                                 <Input id="email" type="email" placeholder="name@example.com" {...register('email', { required: true })} />
+                                {errors.email && <span className="text-red-500 text-sm">Email is required</span>}
                             </div>
                             <div className="flex flex-col space-y-1.5">
                                 <Label htmlFor="password">Password</Label>
                                 <Input id="password" type="password" {...register('password', { required: true })} />
+                                {errors.password && <span className="text-red-500 text-sm">Password is required</span>}
                             </div>
                         </div>
                         {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
