@@ -6,8 +6,8 @@ spring:
     name: user-service
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intellicart}
-    username: ${SPRING_DATASOURCE_USERNAME:intellicart}
-    password: ${SPRING_DATASOURCE_PASSWORD:intellicart123}
+    username: ${SPRING_DATASOURCE_USERNAME:samuel_admin}
+    password: ${SPRING_DATASOURCE_PASSWORD:S1036519037.a}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
