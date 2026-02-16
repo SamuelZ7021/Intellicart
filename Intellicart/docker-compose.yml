@@ -84,13 +84,5 @@ services:
       - postgres
       - kafka
 
-  frontend:
-    build: ./frontend
-    container_name: intellicart-frontend
-    ports:
-      - "3000:80"
-    depends_on:
-      - api-gateway
-
 volumes:
   postgres_data:
