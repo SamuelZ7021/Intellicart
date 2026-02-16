@@ -1,6 +1,15 @@
-/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/web/HealthController.java
 /home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/model/OrderStatus.java
 /home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/model/OrderItem.java
+/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/infrastructure/web/OrderController.java
 /home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/model/Order.java
-/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/repository/OrderRepository.java
+/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/dto/OrderResponse.java
+/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/service/OrderService.java
 /home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/OrderServiceApplication.java
+/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/model/Product.java
+/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/repository/ProductRepository.java
+/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/event/OrderCreatedEvent.java
+/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/infrastructure/web/HealthController.java
+/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/dto/OrderItemRequest.java
+/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/dto/OrderItemResponse.java
+/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/dto/OrderRequest.java
+/home/samuel-zapata/Documents/Intellicart/services/order-service/src/main/java/com/intellicart/orderservice/repository/OrderRepository.java
