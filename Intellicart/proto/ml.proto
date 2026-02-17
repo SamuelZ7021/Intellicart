@@ -3,7 +3,7 @@ syntax = "proto3";
 package ecommerce.ml;
 
 option java_multiple_files = true;
-option java_package = "com.miecommerce.grpc.ml";
+option java_package = "com.intellicart.grpc.ml";
 
 // The Recommendation service definition.
 service RecommendationService {
