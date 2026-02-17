@@ -2,7 +2,7 @@ package com.intellicart.orderservice.service;
 
 import com.intellicart.orderservice.client.RecommendationClient;
 import com.intellicart.orderservice.dto.RecommendationDTO;
-import com.miecommerce.grpc.ml.ProductDetail;
+import com.intellicart.grpc.ml.ProductDetail;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
