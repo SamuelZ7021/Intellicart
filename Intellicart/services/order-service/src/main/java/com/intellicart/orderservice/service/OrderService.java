@@ -72,6 +72,7 @@ public class OrderService {
                 .processed(false)
                 .build();
 
+        
         outboxRepository.save(outboxEvent);
 
         return mapToOrderResponse(savedOrder);
