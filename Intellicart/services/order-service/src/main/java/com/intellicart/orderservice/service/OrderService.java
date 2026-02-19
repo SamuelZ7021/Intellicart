@@ -1,5 +1,6 @@
 package com.intellicart.orderservice.service;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.intellicart.orderservice.dto.OrderItemRequest;
 import com.intellicart.orderservice.dto.OrderItemResponse;
 import com.intellicart.orderservice.dto.OrderRequest;
@@ -16,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import io.opentelemetry.api.trace.Span;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -31,6 +33,7 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final OutboxRepository outboxRepository;
     private final com.fasterxml.jackson.databind.ObjectMapper objectMapper;
+    private final io.micrometer.core.instrument.MeterRegistry meterRegistry;
 
     @Transactional
     public OrderResponse createOrder(OrderRequest request) {
@@ -53,27 +56,35 @@ public class OrderService {
         order.setTotalAmount(totalAmount);
 
         Order savedOrder = orderRepository.save(order);
-        
-        // Publish event
-        String payload;
-        try {
-            payload = objectMapper.writeValueAsString(new OrderCreatedEvent(savedOrder.getId(), savedOrder.getUserId(), savedOrder.getTotalAmount()));
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            throw new RuntimeException("Error creating order event payload", e);
-        }
+
+        String traceId = Span.current().getSpanContext().getTraceId();
+        String spanId = Span.current().getSpanContext().getSpanId();
+
+        ObjectNode payload = objectMapper.createObjectNode();
+        payload.put("orderId", savedOrder.getId());
+        payload.put("userId", savedOrder.getUserId());
+        payload.put("totalAmount", savedOrder.getTotalAmount());
+        payload.put("_trace_context", traceId);
+
+        // Inyectamos metadatos de trazabilidad para que el worker los use
+        ObjectNode traceMetadata = payload.putObject("_trace_metadata");
+        traceMetadata.put("trace_id", traceId);
+        traceMetadata.put("span_id", spanId);
 
         OutboxEvent outboxEvent = OutboxEvent.builder()
                 .id(UUID.randomUUID())
                 .aggregateId(savedOrder.getId().toString())
                 .aggregateType("ORDER")
                 .eventType("ORDER_CREATED")
-                .payload(payload)
+                .payload(payload.toString())
                 .createdAt(LocalDateTime.now())
                 .processed(false)
                 .build();
 
-        
+
         outboxRepository.save(outboxEvent);
+
+        meterRegistry.counter("orders.created").increment();
 
         return mapToOrderResponse(savedOrder);
     }
