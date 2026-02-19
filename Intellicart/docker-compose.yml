@@ -64,6 +64,28 @@ services:
       - "16686:16686" # UI
       - "4317:4317" # OTLP gRPC
 
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.91.0
+    container_name: intellicart-otel-collector
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
+    volumes:
+      - ./infrastructure/otel/otel-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+    depends_on:
+      - jaeger
+
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    container_name: intellicart-prometheus
+    volumes:
+      - ./infrastructure/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - intellicart-network
+
   # Microservices
   api-gateway:
     build: ./services/api-gateway
@@ -97,6 +119,12 @@ services:
       SPRING_DATASOURCE_USERNAME: samuel_admin
       SPRING_DATASOURCE_PASSWORD: S1036519037.a
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      enviroment:
+        - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+        - OTEL_SERVICE_NAME=order-service
+        - OTEL_METRICS_EXPORTER=none # Por ahora solo trazas
+        - OTEL_LOGS_EXPORTER=none
+
     depends_on:
       - postgres
       - kafka
