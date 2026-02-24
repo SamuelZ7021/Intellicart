@@ -32,4 +32,17 @@ public class RecommendationClient {
             throw new RuntimeException("Failed to fetch recommendations for user " + userId, e);
         }
     }
+
+    public boolean ping() {
+        try {
+            RecommendationRequest request = RecommendationRequest.newBuilder()
+                    .setUserId("ping-healthcheck")
+                    .setMaxResults(1)
+                    .build();
+            recommendationServiceStub.getPersonalizedProducts(request);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }

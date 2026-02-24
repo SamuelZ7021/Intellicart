@@ -46,3 +46,19 @@ resilience4j:
         waitDurationInOpenState: 5s
         failureRateThreshold: 50
         eventConsumerBufferSize: 10
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always # Útil para debug en dev, restringir en prod
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db,kafka,circuitBreakers,grpcChannel # Dependencias críticas
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
