@@ -86,6 +86,22 @@ services:
     networks:
       - intellicart-network
 
+  # Dashboards
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: intellicart-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./infrastructure/docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./infrastructure/docker/grafana/dashboards:/etc/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - intellicart-network
+
   # Microservices
   api-gateway:
     build: ./services/api-gateway
