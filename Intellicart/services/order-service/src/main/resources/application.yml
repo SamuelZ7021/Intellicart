@@ -5,7 +5,7 @@ spring:
   application:
     name: order-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intellicart}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intellicart_db}
     username: ${SPRING_DATASOURCE_USERNAME:samuel_admin}
     password: ${SPRING_DATASOURCE_PASSWORD:S1036519037.a}
     driver-class-name: org.postgresql.Driver
@@ -38,6 +38,7 @@ resilience4j:
   circuitbreaker:
     instances:
       userService:
+      recommendationService:
         registerHealthIndicator: true
         slidingWindowSize: 10
         permittedNumberOfCallsInHalfOpenState: 3
@@ -46,6 +47,11 @@ resilience4j:
         waitDurationInOpenState: 5s
         failureRateThreshold: 50
         eventConsumerBufferSize: 10
+grpc:
+  client:
+    ml-service:
+      address: 'static://ml-service:50051'
+      negotiationType: plaintext
 
 management:
   endpoint:

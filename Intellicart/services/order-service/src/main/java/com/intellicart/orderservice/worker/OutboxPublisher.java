@@ -37,7 +37,7 @@ public class OutboxPublisher {
         for (OutboxEvent event : unprocessedEvents) {
             JsonNode payload = objectMapper.readTree(event.getPayload());
             String traceId = payload.get("_trace_metadata").get("trace_id").asText();
-            String spanId = payload.get("_span_metadata").get("span_id").asText();
+            String spanId = payload.get("_trace_metadata").get("span_id").asText();
 
             io.opentelemetry.api.trace.SpanContext remoteContext = SpanContext.create(
                     traceId, spanId, TraceFlags.getSampled(), TraceState.getDefault()
