@@ -1,7 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
-from opentelemetry import trace
 from contextlib import asynccontextmanager
 import grpc
 import structlog
