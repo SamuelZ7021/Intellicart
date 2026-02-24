@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 import grpc
@@ -80,3 +81,28 @@ app.include_router(routes.router, prefix="/api/v1")
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "ml-service"}
+
+# Estado interno para Startup/Readiness
+app.state.is_ready = False
+
+@app.on_event("startup")
+async def startup_event():
+    # Simular carga de modelo pesado
+    await asyncio.sleep(2)
+    app.state.is_ready = True
+
+@app.get("/health/live")
+async def liveness_probe():
+    return {"status": "UP"}
+
+@app.get("/health/ready")
+async def readiness_probe():
+    if app.state.is_ready:
+        return {"status": "UP"}
+    return Response(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+@app.get("/health/startup")
+async def startup_probe():
+    if app.state.is_ready:
+        return {"status": "UP"}
+    return Response(status_code=status.HTTP_503_SERVICE_UNAVAILABLE)

@@ -14,6 +14,11 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U samuel_admin -d intellicart_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Cache and Session management
   redis:
@@ -21,6 +26,11 @@ services:
     container_name: intellicart-cache
     ports:
       - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Event Streaming (Kafka)
   zookeeper:
@@ -44,6 +54,12 @@ services:
       - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
     networks:
       - intellicart-network
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-broker-api-versions.sh --bootstrap-server localhost:9092 || exit 1" ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
     # Kafka UI para monitorear los eventos
     kafka-ui:
@@ -76,11 +92,24 @@ services:
     depends_on:
       - jaeger
 
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: alertmanager
+    volumes:
+      - ./infrastructure/docker/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+    networks:
+      - intellicart-network
+
   prometheus:
     image: prom/prometheus:v2.49.1
     container_name: intellicart-prometheus
     volumes:
       - ./infrastructure/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infrastructure/docker/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
     ports:
       - "9090:9090"
     networks:
@@ -114,6 +143,12 @@ services:
     depends_on:
       - user-service
       - order-service
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health/liveness" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   user-service:
     build: ./services/user-service
@@ -124,8 +159,16 @@ services:
       SPRING_DATASOURCE_PASSWORD: S1036519037.a
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/actuator/health/liveness" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
   order-service:
     build: ./services/order-service
@@ -135,15 +178,43 @@ services:
       SPRING_DATASOURCE_USERNAME: samuel_admin
       SPRING_DATASOURCE_PASSWORD: S1036519037.a
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      enviroment:
-        - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-        - OTEL_SERVICE_NAME=order-service
-        - OTEL_METRICS_EXPORTER=none # Por ahora solo trazas
-        - OTEL_LOGS_EXPORTER=none
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_SERVICE_NAME: order-service
+      OTEL_METRICS_EXPORTER: none # Por ahora solo trazas
+      OTEL_LOGS_EXPORTER: none
 
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8082/actuator/health/liveness" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s # El Startup Probe "pobre" de Docker Compose
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  ml-service:
+    build:
+      context: ./services/ml-service
+      dockerfile: Dockerfile
+    container_name: ml-service
+    ports:
+      - "8000:8000" # HTTP para Health Checks y Métricas
+      - "50051:50051" # gRPC para comunicación interna
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - PROMETHEUS_MULTIPROC_DIR=/tmp
+    healthcheck:
+      # Usamos curl para validar que FastAPI está listo y el modelo cargado
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health/ready" ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 40s # Tiempo de gracia para cargar el modelo de ML
+    networks:
+      - intellicart-network
 
   notification-service:
     build: ./services/notification-service
@@ -151,7 +222,14 @@ services:
     environment:
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8083/actuator/health/liveness" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   postgres_data:
