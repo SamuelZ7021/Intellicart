@@ -24,7 +24,7 @@ management:
         liveness:
           include: livenessState
         readiness:
-          include: readinessState,db,kafka,circuitBreakers,grpcChannel # Dependencias críticas
+          include: readinessState
   endpoints:
     web:
       exposure:
