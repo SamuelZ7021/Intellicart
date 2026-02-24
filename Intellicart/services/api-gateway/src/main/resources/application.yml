@@ -31,7 +31,7 @@ management:
         liveness:
           include: livenessState
         readiness:
-          include: readinessState,db,kafka,circuitBreakers,grpcChannel # Dependencias críticas
+          include: readinessState
   endpoints:
     web:
       exposure:
@@ -58,6 +58,6 @@ cloud:
         predicates:
           - Path=/api/orders/**
       - id: ml-service
-        uri: ${ML_SERVICE_URL:http://ml-service:8000}
+        uri: ${ORDER_SERVICE_URL:http://order-service:8082}
         predicates:
           - Path=/api/recommendations/**
