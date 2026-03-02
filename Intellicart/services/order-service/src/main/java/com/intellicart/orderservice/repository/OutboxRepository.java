@@ -1,6 +1,6 @@
 package com.intellicart.orderservice.repository;
 
-import com.intellicart.orderservice.model.OutboxEvent;
+import com.intellicart.orderservice.domain.model.OutboxEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

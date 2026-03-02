@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS orders (
     user_id BIGINT NOT NULL,
     total_amount DECIMAL(19, 2) NOT NULL,
     status VARCHAR(50) NOT NULL,
+    shipping_address VARCHAR(250),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

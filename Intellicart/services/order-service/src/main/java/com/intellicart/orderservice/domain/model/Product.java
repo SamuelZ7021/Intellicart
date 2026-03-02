@@ -1,4 +1,4 @@
-package com.intellicart.orderservice.model;
+package com.intellicart.orderservice.domain.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -14,4 +14,5 @@ public class Product {
     private String name;
     private BigDecimal price;
     private Integer stock;
+    private String description;
 }

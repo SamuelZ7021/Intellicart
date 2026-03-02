@@ -3,7 +3,7 @@ package com.intellicart.orderservice.worker;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.intellicart.orderservice.model.OutboxEvent;
+import com.intellicart.orderservice.domain.model.OutboxEvent;
 import com.intellicart.orderservice.repository.OutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,6 @@ import io.opentelemetry.api.trace.TraceState;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.api.trace.Tracer;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Component
@@ -37,7 +36,7 @@ public class OutboxPublisher {
         for (OutboxEvent event : unprocessedEvents) {
             JsonNode payload = objectMapper.readTree(event.getPayload());
             String traceId = payload.get("_trace_metadata").get("trace_id").asText();
-            String spanId = payload.get("_span_metadata").get("span_id").asText();
+            String spanId = payload.get("_trace_metadata").get("span_id").asText();
 
             io.opentelemetry.api.trace.SpanContext remoteContext = SpanContext.create(
                     traceId, spanId, TraceFlags.getSampled(), TraceState.getDefault()

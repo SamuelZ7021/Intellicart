@@ -1,8 +1,7 @@
 package com.intellicart.orderservice.listener;
 
 import com.intellicart.orderservice.event.PaymentProcessedEvent;
-import com.intellicart.orderservice.model.Order;
-import com.intellicart.orderservice.model.OrderStatus;
+import com.intellicart.orderservice.domain.model.OrderStatus;
 import com.intellicart.orderservice.repository.OrderRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;

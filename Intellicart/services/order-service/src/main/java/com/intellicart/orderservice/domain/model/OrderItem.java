@@ -1,4 +1,4 @@
-package com.intellicart.orderservice.model;
+package com.intellicart.orderservice.domain.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

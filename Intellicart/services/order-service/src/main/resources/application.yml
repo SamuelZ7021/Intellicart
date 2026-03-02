@@ -5,16 +5,15 @@ spring:
   application:
     name: order-service
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intellicart}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intellicart_db}
     username: ${SPRING_DATASOURCE_USERNAME:samuel_admin}
-    password: ${SPRING_DATASOURCE_PASSWORD:S1036519037.a}
+    password: ${SPRING_DATASOURCE_PASSWORD:'S1036519037.a'}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
         default_schema: orders
   flyway:
     enabled: true

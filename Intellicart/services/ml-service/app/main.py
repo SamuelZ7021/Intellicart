@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi import FastAPI, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from opentelemetry import trace
 import grpc
 import structlog
 import asyncio
@@ -27,7 +28,7 @@ structlog.configure(
         structlog.processors.format_exc_info,
         structlog.processors.JSONRenderer() # Format as JSON
     ],
-    logger_factory=structlog.PrinterLoggerFactory(),
+    logger_factory=structlog.PrintLoggerFactory(),
     cache_logger_on_first_use=True,
 )
 
@@ -49,9 +50,9 @@ async def lifespan(app: FastAPI):
     grpc_server.add_insecure_port('[::]:50051')
     await grpc_server.start()
 
-    yield
     logger.info("service_startup", action="ready", grpc_port=50051)
-    
+    yield
+
     # Shutdown: Stop gRPC server
     if grpc_server:
         logger.info("service_shutdown", action="stopping_grpc")

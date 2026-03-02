@@ -1,6 +1,6 @@
 package com.intellicart.orderservice.dto;
 
-import com.intellicart.orderservice.model.OrderStatus;
+import com.intellicart.orderservice.domain.model.OrderStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

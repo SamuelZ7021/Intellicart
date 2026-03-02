@@ -1,4 +1,4 @@
-package com.intellicart.orderservice.model;
+package com.intellicart.orderservice.domain.model;
 
 public enum OrderStatus {
     PENDING,
