@@ -1,37 +1,7 @@
-server:
-  port: 8081
-
 spring:
   application:
     name: user-service
-  kafka:
-    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    consumer:
-      group-id: user-group
-      auto-offset-reset: earliest
-      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
-      properties:
-        spring.json.trusted.packages: "*"
-
-management:
-  endpoint:
-    health:
-      probes:
-        enabled: true
-      show-details: always # Útil para debug en dev, restringir en prod
-      group:
-        liveness:
-          include: livenessState
-        readiness:
-          include: readinessState
-  endpoints:
-    web:
-      exposure:
-        include: health,info,prometheus
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  # Mover todo esto fuera de 'management'
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intellicart_db}
     username: ${SPRING_DATASOURCE_USERNAME:samuel_admin}
@@ -46,7 +16,20 @@ management:
   flyway:
     enabled: true
     baseline-on-migrate: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer: # El productor de kafka va aquí, no en management
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+# El bloque management solo debe tener esto:
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
 
 jwt:
-  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
-  expiration: ${JWT_EXPIRATION:86400000} # 1 day
+  # Usa este secreto que es Base64 válido (32 bytes equivalentes)
+  secret: dGhpcy1pcy1hLXZlcnktc2VjdXJlLWJhc2U2NC1zZWNyZXQta2V5LTMyeC1jaGFycw==
+  expiration: 86400000

@@ -15,4 +15,4 @@ CREATE TABLE IF NOT EXISTS users_roles (
     );
 
 -- Insertar roles iniciales
-INSERT INTO roles (name) VALUES ('ROLE_USER'), ('ROLE_ADMIN') ON CONFLICT DO NOTHING;
+INSERT INTO roles (name) VALUES ('ROLE_USER') ON CONFLICT DO NOTHING;
