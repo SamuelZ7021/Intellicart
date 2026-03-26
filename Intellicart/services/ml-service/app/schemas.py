@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from typing import List, Optional
 
 class ProductDetail(BaseModel):
@@ -12,5 +12,6 @@ class RecommendationRequest(BaseModel):
     interested_categories: List[str] = []
 
 class RecommendationResponse(BaseModel):
+    model_config = ConfigDict(protected_namespaces=())
     products: List[ProductDetail]
     model_version: str

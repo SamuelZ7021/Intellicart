@@ -1,5 +1,6 @@
 {
   "title": "Service Dashboard",
+  "uid": "service-dashboard",
   "tags": ["service", "jvm", "http"],
   "timezone": "browser",
   "panels": [

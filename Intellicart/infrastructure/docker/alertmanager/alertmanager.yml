@@ -3,8 +3,8 @@ global:
   smtp_smarthost: 'smtp.gmail.com:587'
   smtp_from: 'alerts@intellicart.com'
   smtp_auth_username: 'system-alerts@intellicart.com'
-  smtp_auth_password: '${SMTP_PASSWORD}' # Inyectado vía ENV
-  slack_api_url: '${SLACK_WEBHOOK_URL}'  # Inyectado vía ENV
+  smtp_auth_password: 'dummy-password'
+  slack_api_url: 'http://localhost:8080/dummy-webhook'
 
 route:
   group_by: ['alertname', 'severity']

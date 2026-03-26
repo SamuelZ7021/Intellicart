@@ -110,6 +110,11 @@ services:
       - "9093:9093"
     networks:
       - intellicart-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9093/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   prometheus:
     image: prom/prometheus:v2.49.1
@@ -123,6 +128,9 @@ services:
       - "9090:9090"
     networks:
       - intellicart-network
+    depends_on:
+      alertmanager:
+        condition: service_healthy
 
   # Dashboards
   grafana:
@@ -151,9 +159,11 @@ services:
     environment:
       USER_SERVICE_URL: http://user-service:8081
       ORDER_SERVICE_URL: http://order-service:8082
+      ML_SERVICE_URL: http://ml-service:8000
     depends_on:
       - user-service
       - order-service
+      - notification-service
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health/liveness" ]
       interval: 30s
@@ -166,11 +176,16 @@ services:
     container_name: intellicart-user-service
     networks:
       - intellicart-network
+    ports:
+      - "8801:8081"
     environment:
+      SPRING_PROFILES_ACTIVE: docker
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/intellicart_db
       SPRING_DATASOURCE_USERNAME: samuel_admin
       SPRING_DATASOURCE_PASSWORD: S1036519037.a
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_FLYWAY_REPAIR_ON_MIGRATE: 'true'
+      SPRING_FLYWAY_VALIDATE_ON_MIGRATE: 'false'
     depends_on:
       postgres:
         condition: service_healthy
@@ -221,9 +236,12 @@ services:
     ports:
       - "8000:8000" # HTTP para Health Checks y Métricas
       - "50051:50051" # gRPC para comunicación interna
+    volumes:
+      - ./services/ml-service:/app
     environment:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - PROMETHEUS_MULTIPROC_DIR=/tmp
+      - PYTHONUNBUFFERED=1
     healthcheck:
       # Usamos curl para validar que FastAPI está listo y el modelo cargado
       test: [ "CMD", "curl", "-f", "http://localhost:8000/health/ready" ]

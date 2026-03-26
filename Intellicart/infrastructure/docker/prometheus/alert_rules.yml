@@ -1,7 +1,7 @@
 groups:
   - name: intellicart_infrastructure_alerts
     rules:
-      # CRITICAL: Disk Space (Previene corrupción de WAL en Postgres y Segments en Kafka)
+      # CRITICAL: Disk Space
       - alert: DiskSpaceCritical
         expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.10
         for: 5m
@@ -11,7 +11,7 @@ groups:
           summary: "Low Disk Space on {{ $labels.instance }}"
           description: "Less than 10% disk space remaining. This can cause data corruption in DB/Kafka."
 
-      # WARNING/CRITICAL: JVM Heap Pressure (Previene el OOM Killer)
+      # WARNING/CRITICAL: JVM Heap Pressure
       - alert: JVMHeapPressure
         expr: (jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) > 0.85
         for: 3m
@@ -23,7 +23,7 @@ groups:
 
   - name: intellicart_resilience_alerts
     rules:
-      # CRITICAL: Circuit Breaker Open (El sistema está en modo degradado/fallback)
+      # CRITICAL: Circuit Breaker Open
       - alert: CircuitBreakerOpen
         expr: resilience4j_circuitbreaker_state{state="open"} > 0
         for: 1m
@@ -33,30 +33,9 @@ groups:
           summary: "Circuit Breaker OPEN: {{ $labels.name }}"
           description: "The circuit breaker for service {{ $labels.name }} is OPEN. Fallbacks are active, users may see partial data."
 
-  - name: intellicart_system_health
-    rules:
-      # The Dead Man's Snitch (Watchdog)
-      - alert: Watchdog
-        expr: vector(1)
-        labels:
-          severity: none
-        annotations:
-          summary: "Prometheus Monitoring Heartbeat"
-          description: "This alert always fires. If it stops, the monitoring system is down."
-
-          # JVM Memory Pressure
-      - alert: OrderServiceHighHeap
-        expr: (jvm_memory_used_bytes{application="order-service", area="heap"} / jvm_memory_max_bytes{application="order-service", area="heap"}) > 0.85
-        for: 5m
-        labels:
-          severity: warning
-        annotations:
-          summary: "High Heap Usage: Order Service"
-          description: "JVM Heap usage is above 85% for 5 minutes. Check for memory leaks."
-
   - name: intellicart_middleware_alerts
     rules:
-      # CRITICAL: Kafka Consumer Lag (Inconsistencia de datos en el tiempo)
+      # CRITICAL: Kafka Consumer Lag
       - alert: KafkaConsumerLagHigh
         expr: sum(kafka_consumergroup_lag) by (group, topic) > 1000
         for: 2m
@@ -68,7 +47,7 @@ groups:
 
   - name: intellicart_watchdog
     rules:
-      # The Dead Man's Snitch: Alerta que SIEMPRE dispara
+      # The Dead Man's Snitch: Alerta que SIEMPRE dispara para validar que el sistema funciona
       - alert: Watchdog
         expr: vector(1)
         labels:
@@ -80,7 +59,6 @@ groups:
   - name: intellicart_ml_latency_alerts
     rules:
       # ALERTA TEMPRANA: Latencia gRPC elevada en ML Service
-      # Monitoreamos el p95 de las llamadas al circuit breaker 'recommendationService'
       - alert: MLServiceLatencyWarning
         expr: |
           histogram_quantile(0.95, 
@@ -93,7 +71,7 @@ groups:
           summary: "Early Warning: ML Service Latency High"
           description: "The 95th percentile of gRPC calls to ML Service is > 500ms. Current: {{ $value | printf \"%.2f\" }}s. The Circuit Breaker might open soon."
 
-      # CRITICAL: Lo que ya teníamos (el circuito ya falló)
+      # CRITICAL: Circuito abierto en ML
       - alert: MLServiceCircuitOpen
         expr: resilience4j_circuitbreaker_state{name="recommendationService", state="open"} > 0
         for: 1m
@@ -101,4 +79,4 @@ groups:
           severity: critical
         annotations:
           summary: "CRITICAL: ML Service Circuit OPEN"
-          description: "Circuit breaker 'recommendationService' is OPEN. All recommendations are falling back to default. Business impact: High."
+          description: "Circuit breaker 'recommendationService' is OPEN. All recommendations are falling back to default."

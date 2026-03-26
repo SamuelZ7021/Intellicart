@@ -8,6 +8,8 @@ import com.intellicart.userservice.model.User;
 import com.intellicart.userservice.repository.RoleRepository;
 import com.intellicart.userservice.repository.UserRepository;
 import com.intellicart.userservice.security.JwtUtil;
+import com.intellicart.userservice.event.UserCreatedEvent;
+import org.springframework.kafka.core.KafkaTemplate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -27,6 +29,7 @@ public class AuthService {
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
     private final CustomUserDetailsService userDetailsService;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
 
     @Transactional
     public AuthResponse register(RegisterRequest request) {
@@ -44,7 +47,16 @@ public class AuthService {
         user.setLastName(request.getLastName());
         user.setRoles(Set.of(userRole));
 
-        userRepository.save(user);
+        User savedUser = userRepository.save(user);
+
+        // Publish event for notifications
+        UserCreatedEvent userCreatedEvent = new UserCreatedEvent(
+            savedUser.getId(),
+            savedUser.getEmail(),
+            savedUser.getFirstName(),
+            savedUser.getLastName()
+        );
+        kafkaTemplate.send("user-events", savedUser.getId().toString(), userCreatedEvent);
 
         var userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         var token = jwtUtil.generateToken(userDetails);

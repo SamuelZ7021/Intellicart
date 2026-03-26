@@ -14,5 +14,6 @@ import java.util.List;
 @NoArgsConstructor
 public class OrderRequest {
     private Long userId;
+    private String userEmail;
     private List<OrderItemRequest> items;
 }

@@ -17,61 +17,56 @@ spring:
             allowedMethods: "*"
             allowedHeaders: "*"
             allowCredentials: true
-    routes: # Mover al nivel correcto (hijo de gateway)
-      - id: user-service
-        uri: ${USER_SERVICE_URL:http://user-service:8081}
-        predicates:
-          - Path=/api/users/**, /api/auth/**
-      - id: order-service
-        uri: ${ORDER_SERVICE_URL:http://order-service:8082}
-        predicates:
-          - Path=/api/orders/**
-      - id: ml-service
-        uri: ${ORDER_SERVICE_URL:http://order-service:8082}
-        predicates:
-          - Path=/api/recommendations/**
-    httpclient:
-      connect-timeout: 5000
-      response-timeout: 10s
+            maxAge: 3600
+      routes:
+        # User Service (Auth y User)
+        - id: user-service-auth
+          uri: ${USER_SERVICE_URL:http://user-service:8081}
+          predicates:
+            - Path=/api/auth/**, /api/users/**
+
+        # User Service Products
+        - id: user-service-products
+          uri: ${USER_SERVICE_URL:http://user-service:8081}
+          predicates:
+            - Path=/api/products/**
+
+        # Order Service
+        - id: order-service
+          uri: ${ORDER_SERVICE_URL:http://order-service:8082}
+          predicates:
+            - Path=/api/orders/**
+
+        # ML Service
+        - id: ml-service
+          uri: ${ML_SERVICE_URL:http://ml-service:8000}
+          predicates:
+            - Path=/api/recommendations/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /api/${segment}
+
+        # Notification Service (SSE for real-time)
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://notification-service:8083}
+          predicates:
+            - Path=/api/notifications/**
+
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 10s
 
 management:
   endpoint:
     health:
       probes:
         enabled: true
-      show-details: always # Útil para debug en dev, restringir en prod
-      application: ${spring.application.name} # Etiqueta global para filtrar en Grafana
-      group:
-        liveness:
-          include: livenessState
-        readiness:
-          include: readinessState
+      show-details: always
   endpoints:
     web:
       exposure:
         include: health,info,prometheus
-  prometheus:
-    metrics:
-      export:
-        enabled: true
 
 logging:
   level:
     org.springframework.cloud.gateway: DEBUG
     reactor.netty: INFO
-
-cloud:
-  gateway:
-    routes:
-      - id: user-service
-        uri: ${USER_SERVICE_URL:http://user-service:8081}
-        predicates:
-          - Path=/api/users/**, /api/auth/**
-      - id: order-service
-        uri: ${ORDER_SERVICE_URL:http://order-service:8082}
-        predicates:
-          - Path=/api/orders/**
-      - id: ml-service
-        uri: ${ORDER_SERVICE_URL:http://order-service:8082}
-        predicates:
-          - Path=/api/recommendations/**

@@ -36,7 +36,7 @@ public class UserEventConsumer {
     private void processEvent(OrderCreatedEvent event) {
         boolean success = paymentService.processPayment(event.getUserId(), event.getOrderId(), event.getTotalAmount());
         
-        PaymentProcessedEvent paymentEvent = new PaymentProcessedEvent(event.getOrderId(), success);
+        PaymentProcessedEvent paymentEvent = new PaymentProcessedEvent(event.getOrderId(), event.getUserId(), success, event.getUserEmail());
         
         try {
             kafkaTemplate.send("payment-events", event.getOrderId().toString(), paymentEvent);

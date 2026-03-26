@@ -1,7 +1,9 @@
+server:
+  port: 8081
+
 spring:
   application:
     name: user-service
-  # Mover todo esto fuera de 'management'
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/intellicart_db}
     username: ${SPRING_DATASOURCE_USERNAME:samuel_admin}
@@ -16,13 +18,18 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+    repair-on-migrate: true
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
-    producer: # El productor de kafka va aquí, no en management
+    producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+    consumer:
+      group-id: user-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
-# El bloque management solo debe tener esto:
 management:
   endpoints:
     web:
@@ -30,6 +37,5 @@ management:
         include: health,info,prometheus
 
 jwt:
-  # Usa este secreto que es Base64 válido (32 bytes equivalentes)
   secret: dGhpcy1pcy1hLXZlcnktc2VjdXJlLWJhc2U2NC1zZWNyZXQta2V5LTMyeC1jaGFycw==
   expiration: 86400000

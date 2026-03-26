@@ -37,12 +37,25 @@ public class OrderService {
     public OrderResponse createOrder(OrderRequest request) {
         log.info("Creating order for user: {}", request.getUserId());
 
+        if (request.getUserId() == null) {
+            throw new IllegalArgumentException("UserId cannot be null in order request.");
+        }
+
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new IllegalArgumentException("An order must have at least one item.");
+        }
+
         Order order = new Order();
         order.setUserId(request.getUserId());
         order.setStatus(OrderStatus.PENDING);
 
         List<OrderItem> items = request.getItems().stream()
-                .map(itemRequest -> mapToOrderItem(itemRequest, order))
+                .map(itemRequest -> {
+                    if (itemRequest.getPrice() == null) {
+                        throw new IllegalArgumentException("Price cannot be null for product: " + itemRequest.getProductName());
+                    }
+                    return mapToOrderItem(itemRequest, order);
+                })
                 .collect(Collectors.toList());
         
         order.setItems(items);
@@ -61,6 +74,7 @@ public class OrderService {
         ObjectNode payload = objectMapper.createObjectNode();
         payload.put("orderId", savedOrder.getId());
         payload.put("userId", savedOrder.getUserId());
+        payload.put("userEmail", request.getUserEmail());
         payload.put("totalAmount", savedOrder.getTotalAmount());
         payload.put("_trace_context", traceId);
 
@@ -73,7 +87,7 @@ public class OrderService {
                 .id(UUID.randomUUID())
                 .aggregateId(savedOrder.getId().toString())
                 .aggregateType("ORDER")
-                .eventType("ORDER_CREATED")
+                .eventType("order-events")
                 .payload(payload.toString())
                 .createdAt(LocalDateTime.now())
                 .processed(false)

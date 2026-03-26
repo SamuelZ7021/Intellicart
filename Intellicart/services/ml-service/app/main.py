@@ -1,5 +1,4 @@
-from fastapi import FastAPI, HTTPException
-from fastapi import FastAPI, Response, status
+from fastapi import FastAPI, HTTPException, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 from opentelemetry import trace
@@ -51,6 +50,12 @@ async def lifespan(app: FastAPI):
     await grpc_server.start()
 
     logger.info("service_startup", action="ready", grpc_port=50051)
+    
+    # Simular carga de modelo pesado
+    await asyncio.sleep(2)
+    app.state.is_ready = True
+    logger.info("service_ready", status="model_loaded")
+    
     yield
 
     # Shutdown: Stop gRPC server
@@ -77,7 +82,7 @@ app.add_middleware(
 # Include API routes
 from app.api import routes
 
-app.include_router(routes.router, prefix="/api/v1")
+app.include_router(routes.router, prefix="/api")
 
 @app.get("/health")
 async def health_check():
@@ -85,12 +90,6 @@ async def health_check():
 
 # Estado interno para Startup/Readiness
 app.state.is_ready = False
-
-@app.on_event("startup")
-async def startup_event():
-    # Simular carga de modelo pesado
-    await asyncio.sleep(2)
-    app.state.is_ready = True
 
 @app.get("/health/live")
 async def liveness_probe():

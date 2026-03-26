@@ -12,5 +12,6 @@ import java.math.BigDecimal;
 public class OrderCreatedEvent {
     private Long orderId;
     private Long userId;
+    private String userEmail;
     private BigDecimal totalAmount;
 }
