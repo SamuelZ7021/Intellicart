@@ -1,0 +1,72 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:5173"
+            allowedMethods: "*"
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+      routes:
+        # User Service (Auth y User)
+        - id: user-service-auth
+          uri: ${USER_SERVICE_URL:http://user-service:8081}
+          predicates:
+            - Path=/api/auth/**, /api/users/**
+
+        # User Service Products
+        - id: user-service-products
+          uri: ${USER_SERVICE_URL:http://user-service:8081}
+          predicates:
+            - Path=/api/products/**
+
+        # Order Service
+        - id: order-service
+          uri: ${ORDER_SERVICE_URL:http://order-service:8082}
+          predicates:
+            - Path=/api/orders/**
+
+        # ML Service
+        - id: ml-service
+          uri: ${ML_SERVICE_URL:http://ml-service:8000}
+          predicates:
+            - Path=/api/recommendations/**
+          filters:
+            - RewritePath=/api/(?<segment>.*), /api/${segment}
+
+        # Notification Service (SSE for real-time)
+        - id: notification-service
+          uri: ${NOTIFICATION_SERVICE_URL:http://notification-service:8083}
+          predicates:
+            - Path=/api/notifications/**
+
+      httpclient:
+        connect-timeout: 5000
+        response-timeout: 10s
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+logging:
+  level:
+    org.springframework.cloud.gateway: DEBUG
+    reactor.netty: INFO

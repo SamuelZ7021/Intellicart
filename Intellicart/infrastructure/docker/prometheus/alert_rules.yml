@@ -1,0 +1,82 @@
+groups:
+  - name: intellicart_infrastructure_alerts
+    rules:
+      # CRITICAL: Disk Space
+      - alert: DiskSpaceCritical
+        expr: node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} < 0.10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low Disk Space on {{ $labels.instance }}"
+          description: "Less than 10% disk space remaining. This can cause data corruption in DB/Kafka."
+
+      # WARNING/CRITICAL: JVM Heap Pressure
+      - alert: JVMHeapPressure
+        expr: (jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"}) > 0.85
+        for: 3m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High JVM Heap usage in {{ $labels.application }}"
+          description: "Heap usage is over 85% for 3 minutes. Potential memory leak detected."
+
+  - name: intellicart_resilience_alerts
+    rules:
+      # CRITICAL: Circuit Breaker Open
+      - alert: CircuitBreakerOpen
+        expr: resilience4j_circuitbreaker_state{state="open"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Circuit Breaker OPEN: {{ $labels.name }}"
+          description: "The circuit breaker for service {{ $labels.name }} is OPEN. Fallbacks are active, users may see partial data."
+
+  - name: intellicart_middleware_alerts
+    rules:
+      # CRITICAL: Kafka Consumer Lag
+      - alert: KafkaConsumerLagHigh
+        expr: sum(kafka_consumergroup_lag) by (group, topic) > 1000
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High Kafka Lag: Group {{ $labels.group }}"
+          description: "Consumer group {{ $labels.group }} is lagging behind on topic {{ $labels.topic }} by > 1000 messages."
+
+  - name: intellicart_watchdog
+    rules:
+      # The Dead Man's Snitch: Alerta que SIEMPRE dispara para validar que el sistema funciona
+      - alert: Watchdog
+        expr: vector(1)
+        labels:
+          severity: none
+        annotations:
+          summary: "Prometheus Live Check"
+          description: "This alert should always be firing. If it stops, Prometheus or Alertmanager is down."
+
+  - name: intellicart_ml_latency_alerts
+    rules:
+      # ALERTA TEMPRANA: Latencia gRPC elevada en ML Service
+      - alert: MLServiceLatencyWarning
+        expr: |
+          histogram_quantile(0.95, 
+            sum(rate(resilience4j_circuitbreaker_calls_seconds_bucket{name="recommendationService"}[5m])) by (le)
+          ) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Early Warning: ML Service Latency High"
+          description: "The 95th percentile of gRPC calls to ML Service is > 500ms. Current: {{ $value | printf \"%.2f\" }}s. The Circuit Breaker might open soon."
+
+      # CRITICAL: Circuito abierto en ML
+      - alert: MLServiceCircuitOpen
+        expr: resilience4j_circuitbreaker_state{name="recommendationService", state="open"} > 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "CRITICAL: ML Service Circuit OPEN"
+          description: "Circuit breaker 'recommendationService' is OPEN. All recommendations are falling back to default."

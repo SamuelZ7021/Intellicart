@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package intellicart.order;
+
+option java_multiple_files = true;
+option java_package = "com.intellicart.grpc.order";
+
+service OrderStatusService {
+  rpc GetOrderSummary (OrderRequest) returns (OrderResponse);
+}
+
+message OrderRequest {
+  string order_id = 1;
+}
+
+message OrderResponse {
+  string order_id = 1;
+  string status = 2; // PENDING, PAID, SHIPPED
+  double total_amount = 3;
+  string customer_id = 4;
+}

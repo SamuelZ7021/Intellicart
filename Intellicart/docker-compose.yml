@@ -1,10 +1,10 @@
-version: '3.8'
-
 services:
   # Database for User and Order services
   postgres:
     image: postgres:16-alpine
     container_name: intellicart-db
+    networks:
+      - intellicart-network
     environment:
       POSTGRES_USER: samuel_admin
       POSTGRES_PASSWORD: S1036519037.a
@@ -13,39 +13,266 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U samuel_admin -d intellicart_db" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Cache and Session management
   redis:
     image: redis:7-alpine
     container_name: intellicart-cache
+    networks:
+      - intellicart-network
     ports:
       - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Event Streaming (Kafka)
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
+    networks:
+      - intellicart-network
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
-    depends_on:
-      - zookeeper
     ports:
       - "9092:9092"
+      - "29092:29092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+    networks:
+      - intellicart-network
+    depends_on:
+      - zookeeper
+    healthcheck:
+      test: [ "CMD", "cub", "kafka-ready", "-b", "localhost:9092", "1", "20" ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Kafka UI para monitorear los eventos
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8081:8080"
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=local
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    networks:
+      - intellicart-network
 
   # Distributed Tracing
   jaeger:
     image: jaegertracing/all-in-one:1.50
     container_name: intellicart-tracing
+    networks:
+      - intellicart-network
     ports:
       - "16686:16686" # UI
-      - "4317:4317"   # OTLP gRPC
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.91.0
+    container_name: intellicart-otel-collector
+    networks:
+      - intellicart-network
+    command: [ "--config=/etc/otel-collector-config.yaml" ]
+    volumes:
+      - ./infrastructure/otel/otel-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "4317:4317" # OTLP gRPC receiver
+      - "4318:4318" # OTLP HTTP receiver
+    depends_on:
+      - jaeger
+
+  alertmanager:
+    image: prom/alertmanager:v0.25.0
+    container_name: alertmanager
+    volumes:
+      - ./infrastructure/docker/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+    ports:
+      - "9093:9093"
+    networks:
+      - intellicart-network
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:9093/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  prometheus:
+    image: prom/prometheus:v2.49.1
+    container_name: intellicart-prometheus
+    volumes:
+      - ./infrastructure/docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./infrastructure/docker/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+    ports:
+      - "9090:9090"
+    networks:
+      - intellicart-network
+    depends_on:
+      alertmanager:
+        condition: service_healthy
+
+  # Dashboards
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: intellicart-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./infrastructure/docker/grafana/provisioning:/etc/grafana/provisioning
+      - ./infrastructure/docker/grafana/dashboards:/etc/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - intellicart-network
+
+  # Microservices
+  api-gateway:
+    build: ./services/api-gateway
+    container_name: intellicart-gateway
+    networks:
+      - intellicart-network
+    ports:
+      - "8080:8080"
+    environment:
+      USER_SERVICE_URL: http://user-service:8081
+      ORDER_SERVICE_URL: http://order-service:8082
+      ML_SERVICE_URL: http://ml-service:8000
+    depends_on:
+      - user-service
+      - order-service
+      - notification-service
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8080/actuator/health/liveness" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  user-service:
+    build: ./services/user-service
+    container_name: intellicart-user-service
+    networks:
+      - intellicart-network
+    ports:
+      - "8801:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/intellicart_db
+      SPRING_DATASOURCE_USERNAME: samuel_admin
+      SPRING_DATASOURCE_PASSWORD: S1036519037.a
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_FLYWAY_REPAIR_ON_MIGRATE: 'true'
+      SPRING_FLYWAY_VALIDATE_ON_MIGRATE: 'false'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/actuator/health/liveness" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  order-service:
+    build:
+      context: .
+      dockerfile: services/order-service/Dockerfile
+    container_name: intellicart-order-service
+    networks:
+      - intellicart-network
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/intellicart_db
+      SPRING_DATASOURCE_USERNAME: samuel_admin
+      SPRING_DATASOURCE_PASSWORD: S1036519037.a
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_SERVICE_NAME: order-service
+      OTEL_METRICS_EXPORTER: none # Por ahora solo trazas
+      OTEL_LOGS_EXPORTER: none
+
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8082/actuator/health/liveness" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s # El Startup Probe "pobre" de Docker Compose
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+
+  ml-service:
+    build:
+      context: ./services/ml-service
+      dockerfile: Dockerfile
+    container_name: ml-service
+    ports:
+      - "8000:8000" # HTTP para Health Checks y Métricas
+      - "50051:50051" # gRPC para comunicación interna
+    volumes:
+      - ./services/ml-service:/app
+    environment:
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - PROMETHEUS_MULTIPROC_DIR=/tmp
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      # Usamos curl para validar que FastAPI está listo y el modelo cargado
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/health/ready" ]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 40s # Tiempo de gracia para cargar el modelo de ML
+    networks:
+      - intellicart-network
+
+  notification-service:
+    build: ./services/notification-service
+    container_name: intellicart-notification-service
+    networks:
+      - intellicart-network
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8083/actuator/health/liveness" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
 
 volumes:
   postgres_data:
+
+
+networks:
+  intellicart-network:
+    driver: bridge

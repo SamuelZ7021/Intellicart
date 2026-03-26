@@ -1,0 +1,46 @@
+{
+    "title": "Business Dashboard",
+    "uid": "business-dashboard",
+    "tags": [
+        "business",
+        "orders",
+        "payments"
+    ],
+    "timezone": "browser",
+    "panels": [
+        {
+            "title": "Orders Created Rate",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 0
+            },
+            "targets": [
+                {
+                    "expr": "rate(orders_created_total[5m])",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "title": "Payment Processing Time (Avg)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 0
+            },
+            "targets": [
+                {
+                    "expr": "rate(payment_processed_seconds_sum[5m]) / rate(payment_processed_seconds_count[5m])",
+                    "refId": "A"
+                }
+            ]
+        }
+    ],
+    "schemaVersion": 36,
+    "version": 1
+}

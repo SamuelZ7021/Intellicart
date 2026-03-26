@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <appender name="JSON_STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp>
+                    <timeZone>UTC</timeZone>
+                </timestamp>
+                <version/>
+                <logLevel/>
+                <loggerName/>
+                <threadName/>
+                <contextName/>
+                <message/>
+                <stackTrace/>
+                <mdc>
+                    <includeMdcKeyName>trace_id</includeMdcKeyName>
+                    <includeMdcKeyName>span_id</includeMdcKeyName>
+                </mdc>
+                <arguments/>
+            </providers>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="JSON_STDOUT" />
+    </root>
+</configuration>
